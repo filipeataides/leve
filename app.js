@@ -91,11 +91,23 @@ function bannerInstalar() {
   return `<section class="row" style="gap:12px;padding:14px;border-radius:22px;background:var(--coral);color:#1D1B3A" aria-label="Instalar o app">
     ${LOGO(44, '#1D1B3A', '#FF7A45')}
     <span class="col" style="flex:1;min-width:0;gap:2px"><b style="font-size:16px;white-space:nowrap">Instale o leve</b><span style="font-size:12px;font-weight:600">Ícone na tela, sem internet</span></span>
-    <button class="btn dark" style="min-height:46px;padding:0 16px;font-size:14px" data-act="instalar">Instalar app</button>
+    <button class="btn dark" style="min-height:46px;padding:0 16px;font-size:14px;white-space:nowrap" data-act="instalar">Instalar app</button>
   </section>`;
 }
-ACT.instalar = async () => {
-  const e = S.ui.installEvt;
+const esperarInstalacao = (ms) => new Promise((res) => {
+  if (S.ui.installEvt) return res(S.ui.installEvt);
+  const t0 = Date.now();
+  const iv = setInterval(() => { if (S.ui.installEvt || Date.now() - t0 > ms) { clearInterval(iv); res(S.ui.installEvt || null); } }, 150);
+});
+ACT.instalar = async (btn) => {
+  if (!S.ui.installEvt && btn) { btn.disabled = true; btn.textContent = 'Preparando…'; }
+  const e = await esperarInstalacao(3000);
+  if (btn) { btn.disabled = false; btn.textContent = 'Instalar app'; }
+  if (!e && /android/i.test(navigator.userAgent) && !S.ui.foiProChrome) {
+    S.ui.foiProChrome = true;
+    location.href = 'intent://filipeataides.github.io/leve/#Intent;scheme=https;package=com.android.chrome;S.browser_fallback_url=' + encodeURIComponent('https://filipeataides.github.io/leve/') + ';end';
+    return;
+  }
   if (e) {
     e.prompt();
     const r = await e.userChoice.catch(() => null);
