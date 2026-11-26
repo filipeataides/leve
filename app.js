@@ -82,7 +82,7 @@ ACT.tema = async () => { S.tema = S.tema === 'dark' ? 'light' : 'dark'; await DB
 
 /* ---------------- INSTALAR O APP ---------------- */
 function instalado() {
-  if (IS_ART) return true;
+  if (IS_ART || IS_NATIVE) return true;
   try { if (localStorage.getItem('leve-instalado') === '1') return true; } catch (e) { /* segue */ }
   return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
 }
@@ -100,6 +100,7 @@ const esperarInstalacao = (ms) => new Promise((res) => {
   const iv = setInterval(() => { if (S.ui.installEvt || Date.now() - t0 > ms) { clearInterval(iv); res(S.ui.installEvt || null); } }, 150);
 });
 ACT.instalar = async (btn) => {
+  if (/android/i.test(navigator.userAgent)) { location.href = APK_URL; toast('Baixando o leve… abra o arquivo e toque em Instalar'); return; }
   if (!S.ui.installEvt && btn) { btn.disabled = true; btn.textContent = 'Preparando…'; }
   const e = await esperarInstalacao(3000);
   if (btn) { btn.disabled = false; btn.textContent = 'Instalar app'; }
@@ -391,7 +392,7 @@ VIEWS.perfil = async () => {
 };
 
 /* backup: JSON com fotos em base64 */
-const blobToB64 = (b) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
+var blobToB64 = (b) => new Promise((res) => { const r = new FileReader(); r.onload = () => res(r.result); r.readAsDataURL(b); });
 ACT.exportar = async () => {
   toast('Preparando o backup…');
   const keys = await DB.blobKeys();
@@ -429,7 +430,7 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.ui
 /* ---------------- início ---------------- */
 async function start() {
   await load();
-  if (!IS_ART && 'serviceWorker' in navigator && location.protocol === 'https:') {
+  if (!IS_ART && !IS_NATIVE && 'serviceWorker' in navigator && location.protocol === 'https:') {
     const tinha = !!navigator.serviceWorker.controller;
     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
     let recarregou = false;

@@ -1,0 +1,6 @@
+{
+  "appId": "com.filipeataides.leve",
+  "appName": "leve",
+  "webDir": "www",
+  "android": { "backgroundColor": "#F6F1E9" }
+}

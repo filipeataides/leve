@@ -57,6 +57,8 @@ const DB = (() => {
 
 /* ---------- utilidades ---------- */
 const IS_ART = !!window.__LEVE_ARTIFACT;
+const IS_NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const APK_URL = 'https://github.com/filipeataides/leve/releases/download/app/leve.apk';
 /* confirmação dentro do app (no lugar do confirm do navegador) */
 function confirmar(msg, sim = 'Sim, apagar', nao = 'Cancelar') {
   return new Promise((res) => {
@@ -72,6 +74,15 @@ function confirmar(msg, sim = 'Sim, apagar', nao = 'Cancelar') {
 }
 /* entrega um arquivo: compartilhar no celular, baixar no navegador ou salvar pelo Claude */
 async function salvarArquivo(blob, nome, tipo) {
+  if (IS_NATIVE) {
+    try {
+      const P = window.Capacitor.Plugins;
+      const b64 = (await blobToB64(blob)).split(',')[1];
+      const w = await P.Filesystem.writeFile({ path: nome, data: b64, directory: 'CACHE' });
+      await P.Share.share({ title: nome, files: [w.uri] });
+    } catch (e) { if (!/cancel/i.test(String(e && e.message))) toast('Não consegui compartilhar o arquivo'); }
+    return;
+  }
   if (IS_ART) {
     try {
       const dl = window.claude && (await window.claude.use('downloads'));
