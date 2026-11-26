@@ -80,6 +80,44 @@ function topBar(title, sub, backHref, right = '') {
 const themeBtn = () => `<button class="iconbtn" data-act="tema" aria-label="Alternar modo escuro">${icon(S.tema === 'dark' ? 'sun' : 'moon', 20)}</button>`;
 ACT.tema = async () => { S.tema = S.tema === 'dark' ? 'light' : 'dark'; await DB.set('tema', S.tema); applyTheme(); rerender(); };
 
+/* ---------------- INSTALAR O APP ---------------- */
+function instalado() {
+  if (IS_ART) return true;
+  try { if (localStorage.getItem('leve-instalado') === '1') return true; } catch (e) { /* segue */ }
+  return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+}
+function bannerInstalar() {
+  if (instalado()) return '';
+  return `<section class="row" style="gap:12px;padding:14px;border-radius:22px;background:var(--coral);color:#1D1B3A" aria-label="Instalar o app">
+    ${LOGO(44, '#1D1B3A', '#FF7A45')}
+    <span class="col" style="flex:1;min-width:0;gap:2px"><b style="font-size:16px;white-space:nowrap">Instale o leve</b><span style="font-size:12px;font-weight:600">Ícone na tela, sem internet</span></span>
+    <button class="btn dark" style="min-height:46px;padding:0 16px;font-size:14px" data-act="instalar">Instalar app</button>
+  </section>`;
+}
+ACT.instalar = async () => {
+  const e = S.ui.installEvt;
+  if (e) {
+    e.prompt();
+    const r = await e.userChoice.catch(() => null);
+    S.ui.installEvt = null;
+    if (r && r.outcome === 'accepted') { try { localStorage.setItem('leve-instalado', '1'); } catch (x) { /* segue */ } toast('Pronto! O leve está na sua tela.'); }
+    rerender(); return;
+  }
+  const o = document.createElement('div'); o.className = 'overlay';
+  o.innerHTML = `<div class="sheet" role="dialog" aria-label="Como instalar"><span class="grab"></span>
+    <h2>Instalar o leve</h2>
+    <div class="col" style="gap:10px;font-size:15px;line-height:1.45">
+      <span><b>No Chrome:</b> toque nos três pontinhos (⋮) no canto de cima e escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</span>
+      <span><b>No navegador da Samsung:</b> toque no menu (☰) e escolha <b>Adicionar página a</b> e depois <b>Tela inicial</b>.</span>
+      <span><b>No iPhone (Safari):</b> toque em Compartilhar e escolha <b>Adicionar à Tela de Início</b>.</span>
+    </div>
+    <button class="btn ghost block" data-fechar="1">Já instalei</button>
+    <button class="btn dark block" data-fechar="0">Fechar</button></div>`;
+  o.addEventListener('click', (ev) => { const b = ev.target.closest('[data-fechar]'); if (b || ev.target === o) { ev.stopPropagation(); if (b && b.dataset.fechar === '1') { try { localStorage.setItem('leve-instalado', '1'); } catch (x) { /* segue */ } rerender(); } o.remove(); } });
+  document.body.appendChild(o);
+};
+window.addEventListener('appinstalled', () => { try { localStorage.setItem('leve-instalado', '1'); } catch (x) { /* segue */ } S.ui.installEvt = null; toast('Pronto! O leve está na sua tela.'); rerender(); });
+
 /* ---------------- TELA INICIAL ---------------- */
 function saudacao() { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; }
 function primeiroNome() { return ((S.perfil && S.perfil.nome) || '').trim().split(/\s+/)[0] || ''; }
@@ -195,6 +233,7 @@ VIEWS.hoje = async () => {
       <div class="brand">${LOGO(36)}<div class="col" style="gap:3px"><span class="word">leve<b>.</b></span><span class="small muted" style="font-weight:600">${saudacao()}${primeiroNome() ? ', ' + esc(primeiroNome()) : ''}</span></div></div>
       <div class="row" style="gap:8px"><a href="#/perfil" class="iconbtn round" aria-label="Meu perfil" style="background:var(--ink);color:#FFF6EA;border:0;font-family:var(--display);font-weight:800;font-size:17px">${esc((primeiroNome()[0] || 'L').toUpperCase())}</a>${themeBtn()}</div>
     </header>
+    ${bannerInstalar()}
     ${heroHtml()}
     ${quickHtml()}
     ${conquistasHtml()}
@@ -288,6 +327,7 @@ function restoreForm() {
 VIEWS.inicio = async () => {
   const html = `<div class="screen sheet-page">
     <header class="col" style="gap:6px;padding-top:8px">${LOGO(48)}<h1 style="margin-top:8px;font-size:34px">Comece aqui</h1><span class="muted" style="font-size:14px;line-height:1.45">Seus dados de partida. Dá para mudar tudo depois no seu perfil.</span></header>
+    ${bannerInstalar()}
     ${perfilForm(S.perfil || {}, true)}
     <button class="btn primary block" style="min-height:58px;font-size:16px" data-act="salvarPerfil" data-first="1">Começar minha jornada</button>
     <button class="btn ghost block" data-act="importar">Já uso o leve: restaurar backup</button>
@@ -330,11 +370,7 @@ VIEWS.perfil = async () => {
       <button class="btn dark block" data-act="exportar">${icon('download', 20)} Fazer backup agora</button>
       <button class="btn ghost block" data-act="importar">Restaurar um backup</button>
     </section>
-    <section class="card tight" aria-label="Instalar">
-      <h3>Instalar no celular</h3>
-      <span class="small muted" style="line-height:1.5">No Chrome, toque nos três pontinhos e em "Instalar app" ou "Adicionar à tela inicial". O leve abre em tela cheia e funciona sem internet.</span>
-      ${IS_ART ? '' : `<button class="btn ghost block" data-act="instalar" id="btnInstalar" style="${S.ui.installEvt ? '' : 'display:none'}">Instalar agora</button>`}
-    </section>
+    ${bannerInstalar()}
     <button class="btn danger block" data-act="apagarTudo">Apagar todos os dados deste celular</button>
     <p class="note">leve. versão 1.0 · As calorias são estimativas médias, só para orientação. Não substitui médico nem nutricionista.</p>
   </div>`;
@@ -375,8 +411,7 @@ ACT.apagarTudo = async () => {
   if (!(await confirmar('Tem certeza mesmo? Tudo será apagado.', 'Sim, tenho certeza'))) return;
   await DB.clearAll(); blobUrls.clear(); await load(); go('#/inicio');
 };
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.ui.installEvt = e; const b = $('#btnInstalar'); if (b) b.style.display = ''; });
-ACT.instalar = async () => { const e = S.ui.installEvt; if (!e) return; e.prompt(); await e.userChoice; S.ui.installEvt = null; rerender(); };
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.ui.installEvt = e; });
 
 /* ---------------- início ---------------- */
 async function start() {
