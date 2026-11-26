@@ -416,7 +416,12 @@ window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); S.ui
 /* ---------------- início ---------------- */
 async function start() {
   await load();
-  if (!IS_ART && 'serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (!IS_ART && 'serviceWorker' in navigator && location.protocol === 'https:') {
+    const tinha = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then((r) => r.update()).catch(() => {});
+    let recarregou = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (tinha && !recarregou) { recarregou = true; location.reload(); } });
+  }
   if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
   S.ui.navCount = 0;
   render();
