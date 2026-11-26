@@ -106,6 +106,7 @@ ACT.instalar = async () => {
   const o = document.createElement('div'); o.className = 'overlay';
   o.innerHTML = `<div class="sheet" role="dialog" aria-label="Como instalar"><span class="grab"></span>
     <h2>Instalar o leve</h2>
+    ${/android/i.test(navigator.userAgent) ? `<a class="btn primary block" style="min-height:56px;font-size:16px" href="intent://filipeataides.github.io/leve/#Intent;scheme=https;package=com.android.chrome;end">Abrir no Chrome para instalar</a><span class="small muted">Se você abriu o leve por dentro de outro app (Claude, WhatsApp), toque acima. No Chrome, aparece o botão de instalar.</span>` : ''}
     <div class="col" style="gap:10px;font-size:15px;line-height:1.45">
       <span><b>No Chrome:</b> toque nos três pontinhos (⋮) no canto de cima e escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</span>
       <span><b>No navegador da Samsung:</b> toque no menu (☰) e escolha <b>Adicionar página a</b> e depois <b>Tela inicial</b>.</span>
